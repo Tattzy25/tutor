@@ -2,6 +2,12 @@ import { getSystemPrompt } from './prompt.js';
 import { getSettings } from './settings.js';
 import { toggleVoiceActivation, stopVoiceActivation, startVoiceActivation } from './stt.js';
 import { interruptSpeech, speakText } from './tts.js';
+import { showAgeModal, hideAgeModal, setAgeVerified, isAgeVerified, setGuardianApproved, isGuardianApproved, clearAgeGateFlags } from './age-gate/index.js';
+import { openMenu } from './menu_controls/openMenu.js';
+import { closeMenu } from './menu_controls/closeMenu.js';
+import { loadSession } from './menu_controls/loadSession.js';
+import { newChat } from './menu_controls/newChat.js';
+import { resetApp } from './menu_controls/resetApp.js';
 
 const menuBtn = document.getElementById('menuBtn');
 const closeMenuBtn = document.getElementById('closeMenuBtn');
@@ -51,7 +57,6 @@ function addMessage(content, isUser = false) {
      container.scrollTop = container.scrollHeight;
      saveChatToCookie(); // Auto-save after each message
  }
-
 
 export async function sendMessage(textFromSTT = null) {
     interruptSpeech();
@@ -141,31 +146,64 @@ chatInput.addEventListener('keydown', (e) => {
     }
 });
 
-menuBtn.addEventListener('click', () => menuOverlay.style.display = 'flex');
-closeMenuBtn.addEventListener('click', () => menuOverlay.style.display = 'none');
-loadSessionBtn.addEventListener('click', () => {
-    loadChatFromCookie();
-    menuOverlay.style.display = 'none';
-});
+menuBtn.addEventListener('click', () => openMenu(menuOverlay));
+closeMenuBtn.addEventListener('click', () => closeMenu(menuOverlay));
+loadSessionBtn.addEventListener('click', () => loadSession(loadChatFromCookie, menuOverlay));
 const newChatBtn = document.getElementById('newChatBtn');
-newChatBtn.addEventListener('click', startNewChat);
+newChatBtn.addEventListener('click', () => newChat(addMessage, menuOverlay));
 
-// Listen for the custom event from stt.js
+// Reset App Button logic
+const resetAppBtn = document.getElementById('resetAppBtn');
+resetAppBtn.addEventListener('click', () => resetApp(userNameInput, userGradeInput, userDescriptionInput, aiAssessmentText, menuOverlay, addMessage, clearAgeGateFlags, showAgeModal));
+
+// Age Verification Modal Logic is now modularized in age-gate/index.js
+window.addEventListener('DOMContentLoaded', () => {
+    // Bulletproof enforcement: block all UI until age is verified or guardian approved
+    if (!isAgeVerified() && !isGuardianApproved()) {
+        showAgeModal();
+        // Disable all interactive elements except age modal
+        document.querySelectorAll('button, input, textarea').forEach(el => {
+            if (!el.closest('#ageModal')) {
+                el.disabled = true;
+            }
+        });
+    } else {
+        // Enable all interactive elements
+        document.querySelectorAll('button, input, textarea').forEach(el => {
+            el.disabled = false;
+        });
+    }
+});
+
+// Age Modal Button Logic (cannot be bypassed)
+document.getElementById('ageYesBtn').onclick = function() {
+    setAgeVerified();
+    hideAgeModal();
+    // Enable all interactive elements
+    document.querySelectorAll('button, input, textarea').forEach(el => {
+        el.disabled = false;
+    });
+};
+document.getElementById('ageNoBtn').onclick = function() {
+    document.getElementById('ageModalMsg').textContent = 'You must be 13 or older to use this app. If you have guardian approval, please ask them to continue.';
+    // Optionally, you could add guardian approval logic here
+};
+
+// Ensure resetApp triggers age modal and disables UI
+resetAppBtn.addEventListener('click', () => {
+    resetApp(userNameInput, userGradeInput, userDescriptionInput, aiAssessmentText, menuOverlay, addMessage, clearAgeGateFlags, () => {
+        showAgeModal();
+        document.querySelectorAll('button, input, textarea').forEach(el => {
+            if (!el.closest('#ageModal')) {
+                el.disabled = true;
+            }
+        });
+    });
+});
+
 document.addEventListener('transcription-complete', (e) => {
     const transcribedText = e.detail;
     if (transcribedText) {
         sendMessage(transcribedText);
     }
 });
-
-
-
-
-
-function startNewChat() {
-    const chatMessages = document.getElementById('chatMessages');
-    chatMessages.innerHTML = '';
-    // Clear the cookie by setting an empty value and past expiry
-    document.cookie = "chatHistory=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-    addMessage("Hello! I'm your AI Math Tutor. Ask me any math question or use voice input!", false);
-}

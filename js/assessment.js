@@ -7,26 +7,44 @@
 
 /**
  * Generates a dynamic assessment based on the user's grade level and a specific subject or description.
- * This function fetches a set of questions from a JSON data source tailored to the user's inputs.
+ * This function dynamically imports a set of questions from a JS module tailored to the user's grade.
  *
- * @param {string} grade - The user's grade level (e.g., '5th Grade', 'High School').
- * @param {string} description - A short description of the subject for the assessment (e.g., 'Algebra', 'Photosynthesis').
+ * @param {string} grade - The user's grade level (e.g., '5th Grade', '6th Grade', etc.).
+ * @param {string} description - A short description of the subject for the assessment (e.g., 'Math').
  * @returns {Promise<object>} A promise that resolves to an assessment object containing the questions and structure.
  */
 async function generateAssessment(grade, description) {
-    const response = await fetch('js/questions.json');
-    const data = await response.json();
-
-    const questionSet = data.questions.find(q => q.grade === grade && q.subject === description);
-
+    let questions = [];
+    let gradeKey = grade.toLowerCase().replace(/\s/g, '-').replace('th-', 'th-').replace('grade', 'grade');
+    if (gradeKey === '4th-grade') {
+        questions = (await import('./grades/4th-grade-math.js')).default;
+    } else if (gradeKey === '5th-grade') {
+        questions = (await import('./grades/5th-grade-math.js')).default;
+    } else if (gradeKey === '6th-grade') {
+        questions = (await import('./grades/6th-grade-math.js')).default;
+    } else if (gradeKey === '7th-grade') {
+        questions = (await import('./grades/7th-grade-math.js')).default;
+    } else if (gradeKey === '8th-grade') {
+        questions = (await import('./grades/8th-grade-math.js')).default;
+    } else if (gradeKey === '9th-grade') {
+        questions = (await import('./grades/9th-grade-math.js')).default;
+    } else if (gradeKey === '10th-grade') {
+        questions = (await import('./grades/10th-grade-math.js')).default;
+    } else if (gradeKey === '11th-grade') {
+        questions = (await import('./grades/11th-grade-math.js')).default;
+    } else if (gradeKey === '12th-grade') {
+        questions = (await import('./grades/12th-grade-math.js')).default;
+    }
+    if (description && description.toLowerCase() !== 'math') {
+        questions = questions.filter(q => q.subject && q.subject.toLowerCase() === description.toLowerCase());
+    }
     const assessment = {
         id: `asmt-${Date.now()}`,
         grade: grade,
         subject: description,
-        questions: questionSet ? questionSet.questions : [],
+        questions: questions,
         userAnswers: {}
     };
-
     return assessment;
 }
 

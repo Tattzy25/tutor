@@ -119,6 +119,7 @@
 
                 <button class="btn" id="loadSessionBtn">Load Last Session</button>
                 <button class="btn" id="newChatBtn">Start New Chat</button>
+                <button class="btn" id="resetAppBtn">Reset</button>
                 <div id="recentChats"></div>
             </div>
         </div>
@@ -128,5 +129,15 @@
         <script type="module" src="js/tts.js?v=1.2"></script>
         <script type="module" src="js/stt.js?v=1.2"></script>
         <script type="module" src="js/app.js?v=1.2"></script>
+        <div id="ageModal" style="display:none;position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.98);color:#fff;align-items:center;justify-content:center;flex-direction:column;text-align:center;">
+            <div style="background:var(--secondary-bg);padding:2.5rem 2rem;border-radius:18px;max-width:95vw;width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid var(--border-color);">
+                <h2 style="font-size:2rem;margin-bottom:1.5rem;background:var(--gradient-secondary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Are you 13 years or older?</h2>
+                <div style="display:flex;gap:1.5rem;justify-content:center;margin-bottom:1.5rem;">
+                    <button id="ageYesBtn" class="btn" style="min-width:100px;">Yes</button>
+                    <button id="ageNoBtn" class="btn" style="min-width:100px;">No</button>
+                </div>
+                <div id="ageModalMsg" style="color:var(--accent-purple);font-size:1.1rem;"></div>
+            </div>
+        </div>
 </body>
 </html>
