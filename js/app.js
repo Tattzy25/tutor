@@ -8,6 +8,8 @@ import { closeMenu } from './menu_controls/closeMenu.js';
 import { loadSession } from './menu_controls/loadSession.js';
 import { newChat } from './menu_controls/newChat.js';
 import { resetApp } from './menu_controls/resetApp.js';
+import { saveSession, loadSession as loadSavedSession, deleteSession, listSessions, cleanupOldSessions, exportSession, importSession } from './session_manager/sessionManager.js';
+import { setupUserProfile, getUserProfile } from './user_profile/userProfile.js';
 
 const menuBtn = document.getElementById('menuBtn');
 const closeMenuBtn = document.getElementById('closeMenuBtn');
@@ -21,42 +23,61 @@ const userGradeInput = document.getElementById('userGrade');
 const userDescriptionInput = document.getElementById('userDescription');
 const aiAssessmentText = document.getElementById('aiAssessmentText');
 
-function saveUserProfile() {
-    const userProfile = {
-        name: userNameInput.value,
-        grade: userGradeInput.value,
-        description: userDescriptionInput.value
-    };
-    document.cookie = `userProfile=${JSON.stringify(userProfile)};path=/;max-age=31536000`;
-}
-
-function loadUserProfile() {
-    const cookies = document.cookie.split(';');
-    const profileCookie = cookies.find(c => c.trim().startsWith('userProfile='));
-    if (profileCookie) {
-        const profile = JSON.parse(profileCookie.split('=')[1]);
-        userNameInput.value = profile.name || '';
-        userGradeInput.value = profile.grade || '';
-        userDescriptionInput.value = profile.description || '';
-    }
-}
-
-userNameInput.addEventListener('input', saveUserProfile);
-userGradeInput.addEventListener('input', saveUserProfile);
-userDescriptionInput.addEventListener('input', saveUserProfile);
-
-document.addEventListener('DOMContentLoaded', loadUserProfile);
+setupUserProfile(userNameInput, userGradeInput, userDescriptionInput);
 
 function saveSettings() { return; }
+// Add Recent Chats UI logic
+const recentChatsContainer = document.getElementById('recentChats');
+function renderRecentChats() {
+    const sessions = listSessions();
+    recentChatsContainer.innerHTML = '';
+    sessions.forEach(session => {
+        const btn = document.createElement('button');
+        btn.className = 'recent-chat-btn';
+        btn.textContent = session.name;
+        btn.onclick = () => {
+            const loaded = loadSavedSession(session.id);
+            if (loaded && loaded.messages) {
+                const chatMessages = document.getElementById('chatMessages');
+                chatMessages.innerHTML = '';
+                loaded.messages.forEach(msg => addMessage(msg.content, msg.role === 'user'));
+            }
+        };
+        recentChatsContainer.appendChild(btn);
+        // Add delete button for cleanup
+        const delBtn = document.createElement('button');
+        delBtn.className = 'delete-chat-btn';
+        delBtn.textContent = '🗑';
+        delBtn.onclick = (e) => {
+            e.stopPropagation();
+            deleteSession(session.id);
+            renderRecentChats();
+        };
+        btn.appendChild(delBtn);
+    });
+}
+// Save session after each message
+function saveCurrentSession() {
+    const chatMessages = Array.from(document.querySelectorAll('#chatMessages .message')).map(div => ({
+        role: div.classList.contains('user') ? 'user' : 'assistant',
+        content: div.textContent
+    }));
+    const sessionName = `${userNameInput.value || 'User'} - ${new Date().toLocaleString()}`;
+    saveSession(sessionName, chatMessages);
+    renderRecentChats();
+}
+// Replace saveChatToCookie with saveCurrentSession in addMessage
 function addMessage(content, isUser = false) {
-     const container = document.getElementById('chatMessages');
-     const div = document.createElement('div');
-     div.className = `message ${isUser ? 'user' : 'assistant'}`;
-     div.innerHTML = `<div class="message-content">${content}</div>`;
-     container.appendChild(div);
-     container.scrollTop = container.scrollHeight;
-     saveChatToCookie(); // Auto-save after each message
- }
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `message ${isUser ? 'user' : 'assistant'}`;
+    div.innerHTML = `<div class="message-content">${content}</div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    saveCurrentSession();
+}
+// Render recent chats on load
+window.addEventListener('DOMContentLoaded', renderRecentChats);
 
 export async function sendMessage(textFromSTT = null) {
     interruptSpeech();
@@ -96,11 +117,7 @@ export async function sendMessage(textFromSTT = null) {
 }
 
 async function generateResponse(message) {
-    const userProfile = {
-        name: userNameInput.value,
-        grade: userGradeInput.value,
-        description: userDescriptionInput.value
-    };
+    const userProfile = getUserProfile(userNameInput, userGradeInput, userDescriptionInput);
     const systemPrompt = getSystemPrompt(userProfile);
 
     const settings = getSettings();
@@ -156,54 +173,111 @@ newChatBtn.addEventListener('click', () => newChat(addMessage, menuOverlay));
 const resetAppBtn = document.getElementById('resetAppBtn');
 resetAppBtn.addEventListener('click', () => resetApp(userNameInput, userGradeInput, userDescriptionInput, aiAssessmentText, menuOverlay, addMessage, clearAgeGateFlags, showAgeModal));
 
-// Age Verification Modal Logic is now modularized in age-gate/index.js
-window.addEventListener('DOMContentLoaded', () => {
-    // Bulletproof enforcement: block all UI until age is verified or guardian approved
-    if (!isAgeVerified() && !isGuardianApproved()) {
-        showAgeModal();
-        // Disable all interactive elements except age modal
-        document.querySelectorAll('button, input, textarea').forEach(el => {
-            if (!el.closest('#ageModal')) {
-                el.disabled = true;
-            }
-        });
-    } else {
-        // Enable all interactive elements
-        document.querySelectorAll('button, input, textarea').forEach(el => {
-            el.disabled = false;
-        });
-    }
-});
-
-// Age Modal Button Logic (cannot be bypassed)
-document.getElementById('ageYesBtn').onclick = function() {
-    setAgeVerified();
-    hideAgeModal();
-    // Enable all interactive elements
-    document.querySelectorAll('button, input, textarea').forEach(el => {
-        el.disabled = false;
-    });
-};
-document.getElementById('ageNoBtn').onclick = function() {
-    document.getElementById('ageModalMsg').textContent = 'You must be 13 or older to use this app. If you have guardian approval, please ask them to continue.';
-    // Optionally, you could add guardian approval logic here
-};
-
-// Ensure resetApp triggers age modal and disables UI
-resetAppBtn.addEventListener('click', () => {
-    resetApp(userNameInput, userGradeInput, userDescriptionInput, aiAssessmentText, menuOverlay, addMessage, clearAgeGateFlags, () => {
-        showAgeModal();
-        document.querySelectorAll('button, input, textarea').forEach(el => {
-            if (!el.closest('#ageModal')) {
-                el.disabled = true;
-            }
-        });
-    });
-});
+// Age Verification Modal Logic is now handled by the modularized age-gate system.
 
 document.addEventListener('transcription-complete', (e) => {
     const transcribedText = e.detail;
     if (transcribedText) {
         sendMessage(transcribedText);
+    }
+});
+
+// Assessment Integration
+import { generateAssessment, gradeAssessment } from './assessment.js';
+
+let currentAssessment = null;
+let currentQuestionIndex = 0;
+let assessmentResults = null;
+
+async function startAssessment() {
+    const grade = userGradeInput.value;
+    const description = userDescriptionInput.value || 'Math';
+    currentAssessment = await generateAssessment(grade, description);
+    currentQuestionIndex = 0;
+    assessmentResults = null;
+    showNextAssessmentQuestion();
+}
+
+function showNextAssessmentQuestion() {
+    const question = currentAssessment.questions[currentQuestionIndex];
+    if (!question) {
+        finishAssessment();
+        return;
+    }
+    // Render question UI (replace with your preferred UI framework or vanilla JS)
+    const container = document.getElementById('assessmentContainer') || createAssessmentContainer();
+    container.innerHTML = `<div class="assessment-question"><strong>Question ${currentQuestionIndex + 1}:</strong> ${question.text}</div>` +
+        renderAssessmentInput(question) +
+        `<button id="submitAssessmentAnswer">Submit</button>`;
+    document.getElementById('submitAssessmentAnswer').onclick = () => {
+        const answer = getAssessmentInputValue(question);
+        currentAssessment.userAnswers[question.id] = answer;
+        currentQuestionIndex++;
+        showNextAssessmentQuestion();
+    };
+}
+
+function finishAssessment() {
+    assessmentResults = gradeAssessment(currentAssessment, currentAssessment.userAnswers);
+    // Hide assessment UI
+    const container = document.getElementById('assessmentContainer');
+    if (container) container.remove();
+    // Feed results into AI session (e.g., display summary, update profile, etc.)
+    aiAssessmentText.textContent = `Assessment Complete! Score: ${assessmentResults.score}% (${assessmentResults.correctCount}/${assessmentResults.totalQuestions})`;
+    // Optionally, trigger a welcome message or next phase
+}
+
+function createAssessmentContainer() {
+    const container = document.createElement('div');
+    container.id = 'assessmentContainer';
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100vw';
+    container.style.height = '100vh';
+    container.style.background = 'rgba(255,255,255,0.98)';
+    container.style.zIndex = '9999';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.justifyContent = 'center';
+    container.style.alignItems = 'center';
+    document.body.appendChild(container);
+    return container;
+}
+
+function renderAssessmentInput(question) {
+    switch (question.type) {
+        case 'multiple-choice':
+            return question.options.map((opt, i) => `<label><input type="radio" name="assessmentInput" value="${opt}"> ${opt}</label><br>`).join('');
+        case 'true-false':
+            return ['True', 'False'].map(opt => `<label><input type="radio" name="assessmentInput" value="${opt}"> ${opt}</label><br>`).join('');
+        case 'short-answer':
+        case 'mental-math':
+        case 'game':
+            return `<input type="text" id="assessmentInput" autocomplete="off">`;
+        default:
+            return '';
+    }
+}
+
+function getAssessmentInputValue(question) {
+    switch (question.type) {
+        case 'multiple-choice':
+        case 'true-false':
+            const checked = document.querySelector('input[name="assessmentInput"]:checked');
+            return checked ? checked.value : '';
+        case 'short-answer':
+        case 'mental-math':
+        case 'game':
+            return document.getElementById('assessmentInput').value;
+        default:
+            return '';
+    }
+}
+
+// Trigger assessment after profile entry (e.g., after userDescriptionInput blur or a dedicated button)
+userDescriptionInput.addEventListener('blur', () => {
+    if (userNameInput.value && userGradeInput.value && userDescriptionInput.value) {
+        startAssessment();
     }
 });

@@ -123,21 +123,42 @@
                 <div id="recentChats"></div>
             </div>
         </div>
-    </div>
+        <div class="overlay" id="ageModal" style="display:none; align-items:center; justify-content:center; z-index:200;">
+            <div class="overlay-content" style="max-width:400px; margin:auto; text-align:center;">
+                <h2>Age Verification</h2>
+                <p>To use this app, please confirm your age or have a guardian approve your access.</p>
+                <button id="ageConfirmBtn" class="btn">I am 13 or older</button>
+                <button id="guardianApproveBtn" class="btn">Guardian Approves</button>
+            </div>
+        </div>
         <script src="js/session.js?v=1.1" defer></script>
         <script type="module" src="js/settings.js?v=1.2"></script>
+        <script type="module">
+          import { setAgeVerified, setGuardianApproved, hideAgeModal } from './js/age-gate/index.js';
+          import { openMenu } from './js/menu_controls/openMenu.js';
+          document.addEventListener('DOMContentLoaded', () => {
+            const ageConfirmBtn = document.getElementById('ageConfirmBtn');
+            const guardianApproveBtn = document.getElementById('guardianApproveBtn');
+            const menuOverlay = document.getElementById('menuOverlay');
+            if (ageConfirmBtn) {
+              ageConfirmBtn.onclick = () => {
+                setAgeVerified();
+                hideAgeModal();
+                openMenu(menuOverlay);
+              };
+            }
+            if (guardianApproveBtn) {
+              guardianApproveBtn.onclick = () => {
+                setGuardianApproved();
+                hideAgeModal();
+                openMenu(menuOverlay);
+              };
+            }
+          });
+        </script>
         <script type="module" src="js/tts.js?v=1.2"></script>
         <script type="module" src="js/stt.js?v=1.2"></script>
         <script type="module" src="js/app.js?v=1.2"></script>
-        <div id="ageModal" style="display:none;position:fixed;z-index:9999;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.98);color:#fff;align-items:center;justify-content:center;flex-direction:column;text-align:center;">
-            <div style="background:var(--secondary-bg);padding:2.5rem 2rem;border-radius:18px;max-width:95vw;width:400px;box-shadow:0 8px 32px rgba(0,0,0,0.4);border:1px solid var(--border-color);">
-                <h2 style="font-size:2rem;margin-bottom:1.5rem;background:var(--gradient-secondary);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Are you 13 years or older?</h2>
-                <div style="display:flex;gap:1.5rem;justify-content:center;margin-bottom:1.5rem;">
-                    <button id="ageYesBtn" class="btn" style="min-width:100px;">Yes</button>
-                    <button id="ageNoBtn" class="btn" style="min-width:100px;">No</button>
-                </div>
-                <div id="ageModalMsg" style="color:var(--accent-purple);font-size:1.1rem;"></div>
-            </div>
-        </div>
+
 </body>
 </html>
