@@ -1,0 +1,35 @@
+<style>
+    .danger-zone {
+        border: 2px solid #ff4d4d;
+        padding: 15px;
+        margin-top: 20px;
+        border-radius: 8px;
+        background-color: #2a0000;
+        text-align: center;
+    }
+    .danger-zone-label {
+        color: #ff4d4d;
+        font-weight: bold;
+        margin-bottom: 10px;
+        font-family: 'Arial', sans-serif;
+    }
+    .reset-btn-red {
+        background-color: #ff4d4d;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        width: 100%;
+    }
+    .reset-btn-red:hover {
+        background-color: #ff1a1a;
+    }
+</style>
+<div class="danger-zone">
+    <div class="danger-zone-label">DANGER ZONE</div>
+    <button id="resetAppBtn" class="reset-btn-red">Reset Application</button>
+</div>

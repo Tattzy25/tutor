@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Tutor AI - Voice & Text</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="js/recent_chats/recent_chats.css">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
@@ -117,10 +118,9 @@
                     </div>
                 </div>
 
-                <button class="btn" id="loadSessionBtn">Load Last Session</button>
+                <button class="btn" id="loadSessionBtn">Recent Chats</button>
                 <button class="btn" id="newChatBtn">Start New Chat</button>
-                <button class="btn" id="resetAppBtn">Reset</button>
-                <div id="recentChats"></div>
+                <div id="reset-button-placeholder"></div>
             </div>
         </div>
         <div class="overlay" id="ageModal" style="display:none; align-items:center; justify-content:center; z-index:200;">
@@ -131,7 +131,7 @@
                 <button id="guardianApproveBtn" class="btn">Guardian Approves</button>
             </div>
         </div>
-        <script src="js/session.js?v=1.1" defer></script>
+
         <script type="module" src="js/settings.js?v=1.2"></script>
         <script type="module">
           import { setAgeVerified, setGuardianApproved, hideAgeModal } from './js/age-gate/index.js';
@@ -158,7 +158,6 @@
         </script>
         <script type="module" src="js/tts.js?v=1.2"></script>
         <script type="module" src="js/stt.js?v=1.2"></script>
-        <script type="module" src="js/app.js?v=1.2"></script>
-
+                <script type="module" src="js/app.js?v=1.2"></script>
 </body>
 </html>

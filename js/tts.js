@@ -52,16 +52,17 @@ async function generateSpeech(provider, key, voiceId, text) {
             return URL.createObjectURL(await res.blob());
         },
         groq: async () => {
-            const res = await fetch('https://api.groq.com/openai/v1/audio/speech', {
+            const ttsSettings = getSettings().tts;
+            const res = await fetch(ttsSettings.endpoint, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${key}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    model: voiceId || 'tts-1',
+                    model: ttsSettings.model,
                     input: text,
-                    voice: 'alloy'
+                    voice: ttsSettings.voiceId
                 })
             });
             return URL.createObjectURL(await res.blob());

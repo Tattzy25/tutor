@@ -132,11 +132,12 @@ export async function processAudio(provider, apiKey) {
 }
 
 export async function transcribeGroq(audio, key) {
+    const settings = getSettings().stt;
     const formData = new FormData();
     formData.append('file', new Blob([audio], { type: 'audio/webm' }), 'audio.webm');
-    formData.append('model', 'whisper-large-v3');
-    formData.append('language', getSettings().stt?.language || 'en');
-    const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+    formData.append('model', settings.model);
+    formData.append('language', settings.language || 'en');
+    const res = await fetch(settings.endpoint, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${key}` },
         body: formData

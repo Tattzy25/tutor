@@ -10,6 +10,7 @@ import { newChat } from './menu_controls/newChat.js';
 import { resetApp } from './menu_controls/resetApp.js';
 import { saveSession, loadSession as loadSavedSession, deleteSession, listSessions, cleanupOldSessions, exportSession, importSession } from './session_manager/sessionManager.js';
 import { setupUserProfile, getUserProfile } from './user_profile/userProfile.js';
+import { initRecentChats } from './recent_chats/recent_chats.js';
 
 const menuBtn = document.getElementById('menuBtn');
 const closeMenuBtn = document.getElementById('closeMenuBtn');
@@ -26,36 +27,7 @@ const aiAssessmentText = document.getElementById('aiAssessmentText');
 setupUserProfile(userNameInput, userGradeInput, userDescriptionInput);
 
 function saveSettings() { return; }
-// Add Recent Chats UI logic
-const recentChatsContainer = document.getElementById('recentChats');
-function renderRecentChats() {
-    const sessions = listSessions();
-    recentChatsContainer.innerHTML = '';
-    sessions.forEach(session => {
-        const btn = document.createElement('button');
-        btn.className = 'recent-chat-btn';
-        btn.textContent = session.name;
-        btn.onclick = () => {
-            const loaded = loadSavedSession(session.id);
-            if (loaded && loaded.messages) {
-                const chatMessages = document.getElementById('chatMessages');
-                chatMessages.innerHTML = '';
-                loaded.messages.forEach(msg => addMessage(msg.content, msg.role === 'user'));
-            }
-        };
-        recentChatsContainer.appendChild(btn);
-        // Add delete button for cleanup
-        const delBtn = document.createElement('button');
-        delBtn.className = 'delete-chat-btn';
-        delBtn.textContent = '🗑';
-        delBtn.onclick = (e) => {
-            e.stopPropagation();
-            deleteSession(session.id);
-            renderRecentChats();
-        };
-        btn.appendChild(delBtn);
-    });
-}
+
 // Save session after each message
 function saveCurrentSession() {
     const chatMessages = Array.from(document.querySelectorAll('#chatMessages .message')).map(div => ({
@@ -64,7 +36,6 @@ function saveCurrentSession() {
     }));
     const sessionName = `${userNameInput.value || 'User'} - ${new Date().toLocaleString()}`;
     saveSession(sessionName, chatMessages);
-    renderRecentChats();
 }
 // Replace saveChatToCookie with saveCurrentSession in addMessage
 function addMessage(content, isUser = false) {
@@ -76,8 +47,7 @@ function addMessage(content, isUser = false) {
     container.scrollTop = container.scrollHeight;
     saveCurrentSession();
 }
-// Render recent chats on load
-window.addEventListener('DOMContentLoaded', renderRecentChats);
+
 
 export async function sendMessage(textFromSTT = null) {
     interruptSpeech();
@@ -165,13 +135,13 @@ chatInput.addEventListener('keydown', (e) => {
 
 menuBtn.addEventListener('click', () => openMenu(menuOverlay));
 closeMenuBtn.addEventListener('click', () => closeMenu(menuOverlay));
-loadSessionBtn.addEventListener('click', () => loadSession(loadChatFromCookie, menuOverlay));
+
 const newChatBtn = document.getElementById('newChatBtn');
 newChatBtn.addEventListener('click', () => newChat(addMessage, menuOverlay));
 
-// Reset App Button logic
-const resetAppBtn = document.getElementById('resetAppBtn');
-resetAppBtn.addEventListener('click', () => resetApp(userNameInput, userGradeInput, userDescriptionInput, aiAssessmentText, menuOverlay, addMessage, clearAgeGateFlags, showAgeModal));
+document.addEventListener('DOMContentLoaded', initRecentChats);
+
+
 
 // Age Verification Modal Logic is now handled by the modularized age-gate system.
 
