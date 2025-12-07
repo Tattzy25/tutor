@@ -1,7 +1,7 @@
 // js/session_manager/sessionManager.js
 // Production-grade multi-session manager for chat sessions using localStorage
 
-const SESSION_PREFIX = 'mathTutorSession_';
+const SESSION_PREFIX = 'aiTutorSession_';
 const MAX_SESSIONS = 10;
 
 function saveSession(sessionName, messages) {

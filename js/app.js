@@ -103,7 +103,7 @@ async function generateResponse(message) {
         headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
-            ...(provider === 'openrouter' && { 'HTTP-Referer': location.href, 'X-Title': 'Math Tutor' })
+            ...(provider === 'openrouter' && { 'HTTP-Referer': location.href, 'X-Title': 'AI Tutor' })
         },
         body: JSON.stringify({
             model: model || 'llama3-8b-8192',

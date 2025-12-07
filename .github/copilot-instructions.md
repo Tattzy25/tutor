@@ -1,8 +1,8 @@
-# Math Tutor AI - Copilot Instructions
+# AI Tutor - Copilot Instructions
 
 ## Repository Overview
 
-**Math Tutor AI** is a voice-enabled, interactive AI math tutor web application designed for students (13+). It provides real-time tutoring using AI (via GROQ API), voice input (Speech-to-Text via GROQ Whisper), and voice output (Text-to-Speech via GROQ TTS).
+**AI Tutor** is a voice-enabled, interactive AI tutoring web application designed for learners (13+). It focuses primarily on language learning (especially Spanish) but can assist with any subject. It provides real-time tutoring using AI (via GROQ API), voice input (Speech-to-Text via GROQ Whisper), and voice output (Text-to-Speech via GROQ TTS).
 
 - **Type**: Static web application (HTML/CSS/JavaScript ES6 modules)
 - **Deployment**: Vercel serverless platform
@@ -352,10 +352,12 @@ find /home/runner/work/tutor/tutor -name "*.js" -exec grep -l "searchTerm" {} \;
 
 ## Quick Reference
 
+**Purpose**: Voice-based language learning tutor (primarily Spanish, but multi-purpose)  
 **Start Server**: `python3 -m http.server 8080`  
 **Main Entry**: `tutor.html`  
 **Core Logic**: `js/app.js`  
 **Voice Input**: `js/stt.js`  
 **Voice Output**: `js/tts.js`  
+**System Prompt**: `js/prompt.js` (defines tutor personality and approach)  
 **API Config**: `js/settings.js`  
 **Environment**: `.env` (local) or Vercel dashboard (production)

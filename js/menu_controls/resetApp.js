@@ -8,7 +8,7 @@ export function resetApp(userNameInput, userGradeInput, userDescriptionInput, ai
     document.cookie = "chatHistory=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     const chatMessages = document.getElementById('chatMessages');
     chatMessages.innerHTML = '';
-    addMessage("Hello! I'm your AI Math Tutor. Ask me any math question or use voice input!", false);
+    addMessage("Hello! I'm your AI Tutor. I can help you learn languages, practice conversation, or answer any questions. Use voice or text!", false);
     menuOverlay.style.display = 'none';
     localStorage.removeItem('ageVerified');
     document.cookie = "ageVerified=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
