@@ -1,5 +1,6 @@
 import { getSettings } from './settings.js';
 import { interruptSpeech } from './tts.js';
+import { logger } from './logger.js';
 
 export let isListening = false;
 export let mediaRecorder = null;
@@ -68,25 +69,25 @@ export function stopVoiceActivation() {
 }
 
 export function toggleVoiceActivation() {
-    console.log("STT: toggleVoiceActivation called");
+    logger.log("STT: toggleVoiceActivation called");
     if (document.getElementById('voiceBtn').classList.contains('active')) {
-        console.log("STT: Stopping voice activation");
+        logger.log("STT: Stopping voice activation");
         stopVoiceActivation();
     } else {
-        console.log("STT: Starting voice activation");
+        logger.log("STT: Starting voice activation");
         startVoiceActivation();
     }
 }
 
 export async function startVoiceActivation() {
-    console.log("STT: startVoiceActivation called");
+    logger.log("STT: startVoiceActivation called");
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        console.log("STT: Microphone access granted");
+        logger.log("STT: Microphone access granted");
         document.getElementById('voiceBtn').classList.add('active');
         setupVAD(stream);
     } catch (err) {
-        console.error("STT: Error in startVoiceActivation:", err);
+        logger.error("STT: Error in startVoiceActivation:", err);
         alert('Microphone access denied. Please enable microphone access to use voice input.');
         document.getElementById('voiceBtn').classList.remove('active');
     }
@@ -98,22 +99,22 @@ export function startRecording(stream) {
     const apiKey = settings.stt?.apiKey;
     
     if (!apiKey) {
-        console.error('STT: No API key configured');
+        logger.error('STT: No API key configured');
         alert('Please configure STT API key');
         return;
     }
 
-    console.log('STT: Starting recording', { provider });
+    logger.log('STT: Starting recording', { provider });
     mediaRecorder = new MediaRecorder(stream);
     audioChunks = [];
     mediaRecorder.ondataavailable = e => {
         if (e.data.size > 0) {
             audioChunks.push(e.data);
-            console.log('STT: Audio chunk received', { size: e.data.size });
+            logger.log('STT: Audio chunk received', { size: e.data.size });
         }
     };
     mediaRecorder.onstop = () => {
-        console.log('STT: Recording stopped, processing audio');
+        logger.log('STT: Recording stopped, processing audio');
         processAudio(provider, apiKey);
     };
     mediaRecorder.start();
@@ -129,14 +130,14 @@ export function stopRecording() {
 
 export async function processAudio(provider, apiKey) {
     if (audioChunks.length === 0) {
-        console.warn('STT: No audio chunks to process');
+        logger.warn('STT: No audio chunks to process');
         document.getElementById('voiceBtn').classList.remove('listening');
         isListening = false;
         return;
     }
     
     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-    console.log('STT: Processing audio blob', { size: audioBlob.size, type: audioBlob.type });
+    logger.log('STT: Processing audio blob', { size: audioBlob.size, type: audioBlob.type });
     
     const arrayBuffer = await audioBlob.arrayBuffer();
     const providers = {
@@ -147,7 +148,7 @@ export async function processAudio(provider, apiKey) {
     
     try {
         const text = await providers[provider]();
-        console.log('STT: Transcription successful', { text });
+        logger.log('STT: Transcription successful', { text });
         
         if (text && text.trim().length > 0) {
             document.getElementById('chatInput').value = text;
@@ -155,10 +156,10 @@ export async function processAudio(provider, apiKey) {
             const event = new CustomEvent('transcription-complete', { detail: text });
             document.dispatchEvent(event);
         } else {
-            console.warn('STT: Empty transcription result');
+            logger.warn('STT: Empty transcription result');
         }
     } catch (err) {
-        console.error('STT: processAudio error:', err);
+        logger.error('STT: processAudio error:', err);
         alert(`STT Error: ${err.message}`);
     }
     
@@ -168,7 +169,7 @@ export async function processAudio(provider, apiKey) {
 
 export async function transcribeGroq(audio, key) {
     const settings = getSettings().stt;
-    console.log('STT: Calling GROQ Whisper API', { endpoint: settings.endpoint, model: settings.model });
+    logger.log('STT: Calling GROQ Whisper API', { endpoint: settings.endpoint, model: settings.model });
     
     const formData = new FormData();
     formData.append('file', new Blob([audio], { type: 'audio/webm' }), 'audio.webm');
@@ -183,12 +184,12 @@ export async function transcribeGroq(audio, key) {
     
     if (!res.ok) {
         const errorText = await res.text();
-        console.error('STT: GROQ API error response:', errorText);
+        logger.error('STT: GROQ API error response:', errorText);
         throw new Error(`GROQ STT error: ${res.status} ${res.statusText}`);
     }
     
     const data = await res.json();
-    console.log('STT: GROQ response:', data);
+    logger.log('STT: GROQ response:', data);
     return data.text;
 }
 

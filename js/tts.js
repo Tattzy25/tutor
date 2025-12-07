@@ -1,4 +1,5 @@
 import { getSettings } from './settings.js';
+import { logger } from './logger.js';
 
 let currentAudioElement = null;
 let currentBlobUrl = null;
@@ -22,12 +23,12 @@ export async function speakText(text) {
     const { provider, apiKey, voiceId } = settings.tts || {};
     
     if (!apiKey) {
-        console.warn('TTS: No API key configured');
+        logger.warn('TTS: No API key configured');
         return;
     }
     
     if (!text || text.trim().length === 0) {
-        console.warn('TTS: No text to speak');
+        logger.warn('TTS: No text to speak');
         return;
     }
     
@@ -39,7 +40,7 @@ export async function speakText(text) {
             currentAudioElement = new Audio(audioBlobUrl);
             
             currentAudioElement.onerror = (e) => {
-                console.error('TTS Audio playback error:', e);
+                logger.error('TTS: Audio playback error:', e);
                 interruptSpeech();
             };
             
@@ -47,11 +48,16 @@ export async function speakText(text) {
                 interruptSpeech();
             };
             
-            await currentAudioElement.play();
-            console.log('TTS: Audio playing');
+            try {
+                await currentAudioElement.play();
+                logger.log('TTS: Audio playing');
+            } catch (playError) {
+                logger.error('TTS: Audio playback failed (autoplay policy?):', playError);
+                // User may need to interact with page first for audio to play
+            }
         }
     } catch (err) {
-        console.error('TTS: Error in speakText:', err);
+        logger.error('TTS: Error in speakText:', err);
     }
 }
 
@@ -84,7 +90,7 @@ async function generateSpeech(provider, key, voiceId, text) {
         },
         groq: async () => {
             const ttsSettings = getSettings().tts;
-            console.log('TTS: Calling GROQ API', { endpoint: ttsSettings.endpoint, model: ttsSettings.model, voice: ttsSettings.voiceId });
+            logger.log('TTS: Calling GROQ API', { endpoint: ttsSettings.endpoint, model: ttsSettings.model, voice: ttsSettings.voiceId });
             const res = await fetch(ttsSettings.endpoint, {
                 method: 'POST',
                 headers: {
@@ -99,11 +105,11 @@ async function generateSpeech(provider, key, voiceId, text) {
             });
             if (!res.ok) {
                 const errorText = await res.text();
-                console.error('TTS: GROQ API error response:', errorText);
+                logger.error('TTS: GROQ API error response:', errorText);
                 throw new Error(`GROQ TTS error: ${res.status} ${res.statusText}`);
             }
             const blob = await res.blob();
-            console.log('TTS: Received audio blob', { size: blob.size, type: blob.type });
+            logger.log('TTS: Received audio blob', { size: blob.size, type: blob.type });
             return URL.createObjectURL(blob);
         }
     };
@@ -113,7 +119,7 @@ async function generateSpeech(provider, key, voiceId, text) {
         }
         return await providers[provider]();
     } catch (err) {
-        console.error('TTS: generateSpeech error:', err);
+        logger.error('TTS: generateSpeech error:', err);
         return null;
     }
 }
