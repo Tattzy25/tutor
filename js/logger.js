@@ -2,7 +2,7 @@
 // To disable logs in production: Change DEBUG to false before deployment
 // For Vercel: Set environment variable DEBUG_LOGS=false and read from process.env
 
-const DEBUG = true; // PRODUCTION: Set to false to disable debug logs
+const DEBUG = false; // PRODUCTION: Set to false to disable debug logs
 
 export const logger = {
     log: (...args) => {
